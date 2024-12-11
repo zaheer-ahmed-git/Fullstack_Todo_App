@@ -17,6 +17,7 @@ from backend.models import (
     TaskStatus,
     TaskUpdate,
 )
+from backend.realtime import manager
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -58,16 +59,17 @@ def get_task(task_id: int, session: SessionDep) -> Task:
 
 
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
-def create_task(payload: TaskCreate, session: SessionDep) -> Task:
+async def create_task(payload: TaskCreate, session: SessionDep) -> Task:
     task = Task.model_validate(payload)
     session.add(task)
     session.commit()
     session.refresh(task)
+    await manager.broadcast("task.created", TaskRead.model_validate(task).model_dump(mode="json"))
     return task
 
 
 @router.patch("/{task_id}", response_model=TaskRead)
-def update_task(task_id: int, payload: TaskUpdate, session: SessionDep) -> Task:
+async def update_task(task_id: int, payload: TaskUpdate, session: SessionDep) -> Task:
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -80,13 +82,15 @@ def update_task(task_id: int, payload: TaskUpdate, session: SessionDep) -> Task:
     session.add(task)
     session.commit()
     session.refresh(task)
+    await manager.broadcast("task.updated", TaskRead.model_validate(task).model_dump(mode="json"))
     return task
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(task_id: int, session: SessionDep) -> None:
+async def delete_task(task_id: int, session: SessionDep) -> None:
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     session.delete(task)
     session.commit()
+    await manager.broadcast("task.deleted", {"id": task_id})

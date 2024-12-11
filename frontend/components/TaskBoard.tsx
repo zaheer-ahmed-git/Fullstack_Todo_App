@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTaskSocket } from "@/hooks/useTaskSocket";
 import { api } from "@/lib/api";
 import type { Category, Task, TaskFilters as Filters, TaskInput } from "@/lib/types";
 import { TaskCard } from "./TaskCard";
@@ -14,6 +15,7 @@ export function TaskBoard() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -35,9 +37,34 @@ export function TaskBoard() {
     void load();
   }, [load]);
 
+  useTaskSocket({
+    onStatus: setLive,
+    onCreated: (task) => {
+      setTasks((current) => {
+        if (current.some((item) => item.id === task.id)) {
+          return current;
+        }
+        return [task, ...current];
+      });
+    },
+    onUpdated: (task) => {
+      setTasks((current) =>
+        current.map((item) => (item.id === task.id ? task : item))
+      );
+    },
+    onDeleted: (id) => {
+      setTasks((current) => current.filter((item) => item.id !== id));
+    },
+  });
+
   async function handleCreate(payload: TaskInput) {
     const created = await api.createTask(payload);
-    setTasks((current) => [created, ...current]);
+    setTasks((current) => {
+      if (current.some((item) => item.id === created.id)) {
+        return current;
+      }
+      return [created, ...current];
+    });
   }
 
   async function handleUpdate(id: number, payload: TaskInput) {
@@ -52,6 +79,21 @@ export function TaskBoard() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-[var(--muted)]">
+          Live sync keeps every open board in step.
+        </p>
+        <span
+          className={`rounded-full px-3 py-1 text-xs ${
+            live
+              ? "bg-emerald-500/20 text-emerald-200"
+              : "bg-amber-500/20 text-amber-100"
+          }`}
+        >
+          {live ? "Realtime connected" : "Reconnecting..."}
+        </span>
+      </div>
+
       <TaskForm categories={categories} onSubmit={handleCreate} />
       <TaskFilters categories={categories} filters={filters} onChange={setFilters} />
 
