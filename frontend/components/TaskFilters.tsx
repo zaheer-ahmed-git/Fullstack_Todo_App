@@ -10,12 +10,18 @@ type Props = {
 
 export function TaskFilters({ categories, filters, onChange }: Props) {
   return (
-    <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-black/20 p-4 md:grid-cols-5">
+    <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-black/20 p-4 md:grid-cols-6">
       <input
         className="rounded-lg border border-[var(--line)] bg-slate-900/70 px-3 py-2 text-sm md:col-span-2"
         placeholder="Search tasks"
         value={filters.q ?? ""}
         onChange={(e) => onChange({ ...filters, q: e.target.value })}
+      />
+      <input
+        className="rounded-lg border border-[var(--line)] bg-slate-900/70 px-3 py-2 text-sm"
+        placeholder="Assignee"
+        value={filters.assignee ?? ""}
+        onChange={(e) => onChange({ ...filters, assignee: e.target.value })}
       />
       <select
         className="rounded-lg border border-[var(--line)] bg-slate-900/70 px-3 py-2 text-sm"

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Category, Task, TaskInput } from "@/lib/types";
+import { CommentPanel } from "./CommentPanel";
 import { TaskForm } from "./TaskForm";
 
 type Props = {
@@ -11,7 +12,6 @@ type Props = {
   editing: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
-  footer?: React.ReactNode;
 };
 
 export function TaskCard({
@@ -22,7 +22,6 @@ export function TaskCard({
   editing,
   onEdit,
   onCancelEdit,
-  footer,
 }: Props) {
   const category = categories.find((item) => item.id === task.category_id);
 
@@ -83,7 +82,7 @@ export function TaskCard({
           Delete
         </button>
       </div>
-      {footer}
+      <CommentPanel taskId={task.id} />
     </article>
   );
 }
